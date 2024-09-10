@@ -9,8 +9,8 @@ import (
 var mutex sync.Mutex
 
 func eat(id int, eatCounter int) {
-	time.Sleep(2 * time.Second)
 	fmt.Printf("Philosopher: %d is eating for the %d time\n", id, eatCounter)
+	time.Sleep(2 * time.Second)
 }
 
 func think(id int, forks chan [5]bool) {
@@ -26,8 +26,8 @@ func think(id int, forks chan [5]bool) {
 			setAvailable(id, forks)
 			setAvailable((id+1)%5, forks)
 		}
-		time.Sleep(1 * time.Second)
 		fmt.Printf("Philosopher: %d is thinking...\n", id)
+		time.Sleep(1 * time.Second)
 	}
 }
 
