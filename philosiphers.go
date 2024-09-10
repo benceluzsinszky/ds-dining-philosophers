@@ -10,7 +10,7 @@ var mutex sync.Mutex
 
 func eat(id int, eatCounter int) {
 	fmt.Printf("Philosopher: %d is eating for the %d time\n", id, eatCounter)
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 }
 
 func think(id int, forks chan [5]bool) {
@@ -32,7 +32,7 @@ func think(id int, forks chan [5]bool) {
 }
 
 func isAvailable(id int, forks chan [5]bool) bool {
-	mutex.Lock()
+	mutex.Lock() // critical section is locked
 	defer mutex.Unlock()
 	myForks := <-forks
 	availability := myForks[id]
@@ -41,7 +41,7 @@ func isAvailable(id int, forks chan [5]bool) bool {
 }
 
 func setAvailable(id int, forks chan [5]bool) {
-	mutex.Lock()
+	mutex.Lock() // critical section is locked
 	defer mutex.Unlock()
 	myForks := <-forks
 	myForks[id] = !myForks[id]
@@ -53,9 +53,9 @@ func main() {
 	forks <- [5]bool{true, true, true, true, true}
 
 	for i := 0; i < 5; i++ {
-		go think(i, forks)
+		go think(i, forks) // philosopher goroutines
 	}
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(30 * time.Second) // main thread
 
 }
