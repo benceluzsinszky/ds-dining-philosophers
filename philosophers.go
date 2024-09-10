@@ -14,19 +14,19 @@ func eat(id int, eatCounter int) {
 func think(id int, leftFork, rightFork chan bool) {
 	eatCounter := 0
 	for {
-		select {
-		case <-leftFork:
+		select { // select statement is non-blocking (other philosophers are not waiting for the fork)
+		case <-leftFork: // acquiring a fork (not available to other philosophers)
 			select {
 			case <-rightFork:
 				eatCounter++
 				eat(id, eatCounter)
-				leftFork <- true
+				leftFork <- true // releasing forks
+				rightFork <- true
 			default:
-				leftFork <- true
+				leftFork <- true // release on default to avoid deadlocks
 			}
 		default:
 		}
-		rightFork <- true
 
 		fmt.Printf("Philosopher: %d is thinking...\n", id)
 		time.Sleep(1 * time.Second)
@@ -34,7 +34,7 @@ func think(id int, leftFork, rightFork chan bool) {
 }
 
 func main() {
-	forks := make([]chan bool, 5) // forks are channels
+	forks := make([]chan bool, 5) // forks are boolean value channels
 	for i := 0; i < 5; i++ {
 		forks[i] = make(chan bool, 1)
 		forks[i] <- true
@@ -44,6 +44,6 @@ func main() {
 		go think(i, forks[i], forks[(i+1)%5]) // philosopher goroutines
 	}
 
-	time.Sleep(30 * time.Second) // main thread
+	time.Sleep(30 * time.Second) // main thread to let the philosophers eat and think
 
 }
