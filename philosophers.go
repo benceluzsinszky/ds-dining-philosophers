@@ -5,45 +5,62 @@ import (
 	"time"
 )
 
-func eat(id int, eatCounter int) {
-	fmt.Printf("Philosopher: %d is eating for the %d time\n", id, eatCounter)
-	time.Sleep(1 * time.Second)
-	fmt.Printf("Philosopher: %d is done eating\n", id)
+// Fork represents a single fork, handled by a separate goroutine
+func fork(signal chan bool) {
+	for {
+		// Wait for a signal from a philosopher to request or release the fork
+		signal <- true // Fork is available (this is the signal that a philosopher can take the fork)
+		<-signal       // Wait for a signal from a philosopher to release the fork
+	}
 }
 
+// Philosopher's behavior: thinking and attempting to eat
 func think(id int, leftFork, rightFork chan bool) {
 	eatCounter := 0
+	fmt.Printf("Philosopher: %d is thinking...\n", id)
 	for {
-		select { // select statement is non-blocking (other philosophers are not waiting for the fork)
-		case <-leftFork: // acquiring a fork (not available to other philosophers)
+		select {
+		case <-leftFork: // Acquire the left fork
 			select {
-			case <-rightFork:
+			case <-rightFork: // Acquire the right fork
 				eatCounter++
 				eat(id, eatCounter)
-				leftFork <- true // releasing forks
-				rightFork <- true
+				leftFork <- true                                   // Release the left fork
+				rightFork <- true                                  // Release the right fork
+				fmt.Printf("Philosopher: %d is thinking...\n", id) // Philosopher is thinking after eating
+				time.Sleep(100 * time.Millisecond)
+
 			default:
-				leftFork <- true // release on default to avoid deadlocks
+				// Release the left fork if the right fork is unavailable to prevent deadlock
+				leftFork <- true
 			}
 		default:
 		}
-
-		fmt.Printf("Philosopher: %d is thinking...\n", id)
-		time.Sleep(1 * time.Second)
 	}
 }
 
+// Simulates a philosopher eating
+func eat(id int, eatCounter int) {
+	fmt.Printf("Philosopher: %d is eating for the %d time\n", id, eatCounter)
+	time.Sleep(1 * time.Second)
+	//fmt.Printf("Philosopher: %d is done eating\n", id)
+}
+
 func main() {
-	forks := make([]chan bool, 5) // forks are boolean value channels
-	for i := 0; i < 5; i++ {
-		forks[i] = make(chan bool, 1)
-		forks[i] <- true
+	numPhilosophers := 5
+
+	// Create fork channels and run each fork as a goroutine
+	forkChannels := make([]chan bool, numPhilosophers)
+	for i := 0; i < numPhilosophers; i++ {
+		forkChannels[i] = make(chan bool, 1)
+		go fork(forkChannels[i])
 	}
 
-	for i := 0; i < 5; i++ {
-		go think(i, forks[i], forks[(i+1)%5]) // philosopher goroutines
+	// Start philosopher goroutines
+	for i := 0; i < numPhilosophers; i++ {
+		go think(i, forkChannels[i], forkChannels[(i+1)%numPhilosophers])
 	}
 
-	time.Sleep(30 * time.Second) // main thread to let the philosophers eat and think
-
+	// Let the philosophers eat and think for 30 seconds
+	time.Sleep(30 * time.Second)
 }
